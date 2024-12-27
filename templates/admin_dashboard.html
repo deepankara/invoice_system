@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .badge-cleared {
+            background-color: #28a745;
+        }
+        .badge-not-cleared {
+            background-color: #dc3545;
+        }
+        .filter-form input, .filter-form select {
+            margin-right: 10px;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100%;
+            background-color: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            color: white;
+            padding: 10px 15px;
+            display: block;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .sidebar a:hover {
+            background-color: #007bff;
+        }
+        .content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .table-responsive {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h3 class="text-white text-center">Admin Dashboard</h3>
+        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('add_invoice') }}">Add Invoice</a> <!-- Changed to add_invoice -->
+        <a href="{{ url_for('index') }}">Invoice List</a>
+        <a href="{{ url_for('manage_vendors') }}">Manage Vendors</a>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+        </nav>
+
+        <!-- Filter Form -->
+        <form class="filter-form mb-4" action="{{ url_for('admin_dashboard') }}" method="post">
+            <div class="row">
+                <div class="col-md-2">
+                    <input type="text" name="vendor" class="form-control" placeholder="Vendor" value="{{ request.form.get('vendor', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="invoice_date" class="form-control" value="{{ request.form.get('invoice_date', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="date_submission" class="form-control" value="{{ request.form.get('date_submission', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="invoice_number" class="form-control" placeholder="Invoice Number" value="{{ request.form.get('invoice_number', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="created_by" class="form-control" placeholder="Created By" value="{{ request.form.get('created_by', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <div class="d-grid gap-2 d-md-block">
+                        <button type="submit" class="btn btn-primary">Filter</button>
+                        <button type="button" class="btn btn-secondary" id="clearBtn">Clear</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!-- Download Excel Form -->
+        <form class="filter-form mb-4" action="{{ url_for('download_excel') }}" method="post">
+            <input type="hidden" name="vendor" value="{{ request.form.get('vendor', '') }}">
+            <input type="hidden" name="invoice_date" value="{{ request.form.get('invoice_date', '') }}">
+            <input type="hidden" name="date_submission" value="{{ request.form.get('date_submission', '') }}">
+            <input type="hidden" name="invoice_number" value="{{ request.form.get('invoice_number', '') }}">
+            <input type="hidden" name="created_by" value="{{ request.form.get('created_by', '') }}">
+
+            <div class="col-md-2">
+                <div class="d-grid gap-2 d-md-block">
+                    <button type="submit" class="btn btn-success">Download Excel</button>
+                </div>
+            </div>
+        </form>
+        <div class="row mb-4">
+            <!-- New Card: Overall Pool -->
+            <div class="col-md-4">
+                <div class="card text-white bg-primary">
+                    <div class="card-header">
+                        Overall Pool
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ "{:,.2f}".format(overall_pool) }}</h5>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- New Card: Monthly Pool -->
+            <div class="col-md-4">
+                <div class="card text-white bg-warning">
+                    <div class="card-header">
+                        Monthly Pool ({{ today.strftime('%B') }})
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ "{:,.2f}".format(monthly_pool) }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Panel -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-info">
+                    <div class="card-header">
+                        <a href="{{ url_for('admin_dashboard', filter='all') }}" class="text-white text-decoration-none">Total Invoices</a>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ total_invoices }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-success">
+                    <div class="card-header">
+                        <a href="{{ url_for('admin_dashboard', filter='cleared') }}" class="text-white text-decoration-none">Cleared Invoices</a>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ total_cleared_invoices }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-danger">
+                    <div class="card-header">
+                        <a href="{{ url_for('admin_dashboard', filter='uncleared') }}" class="text-white text-decoration-none">Uncleared Invoices</a>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ total_uncleared_invoices }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- No Results Message -->
+        {% if no_results_message %}
+        <div class="alert alert-warning" role="alert">
+            {{ no_results_message }}
+        </div>
+        {% endif %}
+
+        <!-- Invoices Table -->
+        <div class="table-responsive shadow-lg p-3 mb-5 bg-body-tertiary rounded">
+            <table class="table table-striped table-hover table-bordered align-middle text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Invoice Date</th>
+                        <th>Date Received</th>
+                        <th>Vendor</th>
+                        <th>Invoice Number</th>
+                        <th>PO Number</th>
+                        <th>MSME</th>
+                        <th>Invoice Amount</th>
+                        <th>GST</th>
+                        <th>Total Amount</th>
+                        <th>Date of Submission</th>
+                        <th>Approved By</th>
+                        <th>Created By</th>
+                        <th>Invoice Cleared</th>
+                        <th>Cleared Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr>
+                        <td>{{ invoice.invoice_date }}</td>
+                        <td>{{ invoice.date_received }}</td>
+                        <td>{{ invoice.vendor }}</td>
+                        <td>{{ invoice.invoice_number }}</td>
+                        <td>{{ invoice.po_number }}</td>
+                        <td>{{ invoice.msme }}</td>
+                        <td>{{ invoice.invoice_amount }}</td>
+                        <td>{{ invoice.gst }}</td>
+                        <td>{{ invoice.total_amount }}</td>
+                        <td>{{ invoice.date_submission }}</td>
+                        <td>{{ invoice.approved_by or 'N/A' }}</td>
+                        <td>{{ invoice.created_by }}</td>
+                        
+                        <!-- Display Invoice Cleared Status with badge -->
+                        <td>
+                            {% if invoice.invoice_cleared == 'Yes' %}
+                                <span class="badge badge-cleared">Cleared</span>
+                            {% else %}
+                                <span class="badge badge-not-cleared">Not Cleared</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if invoice.invoice_cleared == 'Yes' %}
+                                {{ invoice.invoice_cleared_date }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script type="text/javascript">
+        document.getElementById('clearBtn').onclick = function() {
+            window.location.href = "{{ url_for('admin_dashboard') }}";
+        };
+    </script>
+    
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Vendors</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        .btn-primary, .btn-danger, .btn-secondary {
+            border-radius: 20px;
+            font-size: 0.9rem;
+            padding: 8px 16px;
+        }
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid #ddd;
+        }
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+        .form-control {
+            border-radius: 8px;
+        }
+        .container {
+            max-width: 800px;
+            margin-top: 40px;
+        }
+        .vendor-status {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-left: auto;
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Title -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Manage Vendors</h2>
+            <div class="mt-3">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+            </div>
+        </div>
+
+        <!-- Form to Add a New Vendor -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-person-plus-fill"></i> Add a New Vendor
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('manage_vendors') }}">
+                    <div class="form-group mb-3">
+                        <label for="new_vendor">Vendor Name</label>
+                        <input type="text" class="form-control" id="new_vendor" name="new_vendor" placeholder="Enter vendor name" required>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="vendor_status">Vendor Status</label>
+                        <select class="form-control" id="vendor_status" name="vendor_status" required>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Blacklisted">Blacklisted</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Vendor
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Display Success or Error Messages -->
+        {% if message %}
+            <div class="alert alert-info mt-3" role="alert">
+                {{ message }}
+            </div>
+        {% endif %}
+
+        <!-- List of Vendors with Edit Option -->
+        <h3 class="mt-4">Current Vendors</h3>
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    {% for vendor in vendors %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body d-flex justify-content-between align-items-center">
+                                    <!-- Vendor Information -->
+                                    <div>
+                                        <h5 class="card-title">{{ vendor.vendor_name }}</h5>
+                                        <p class="card-text">
+                                            <span class="badge 
+                                                {% if vendor.vendor_status == 'Active' %} bg-success 
+                                                {% elif vendor.vendor_status == 'Inactive' %} bg-warning 
+                                                {% elif vendor.vendor_status == 'Blacklisted' %} bg-danger 
+                                                {% endif %}">
+                                                {{ vendor.vendor_status }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <!-- Edit Button with Tooltip -->
+                                    <div>
+                                        <button class="btn btn-secondary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#editVendorModal-{{ vendor.id }}" title="Edit Vendor Status">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edit Vendor Modal -->
+                        <div class="modal fade" id="editVendorModal-{{ vendor.id }}" tabindex="-1" aria-labelledby="editVendorLabel-{{ vendor.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="editVendorLabel-{{ vendor.id }}">Edit Vendor: {{ vendor.vendor_name }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form method="POST" action="{{ url_for('edit_vendor', id=vendor.id) }}">
+                                            <div class="form-group mb-3">
+                                                <label for="edit_vendor_status">Vendor Status</label>
+                                                <select class="form-control" id="edit_vendor_status" name="vendor_status" required>
+                                                    <option value="Active" {% if vendor.vendor_status == 'Active' %}selected{% endif %}>Active</option>
+                                                    <option value="Inactive" {% if vendor.vendor_status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                                                    <option value="Blacklisted" {% if vendor.vendor_status == 'Blacklisted' %}selected{% endif %}>Blacklisted</option>
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100">
+                                                <i class="bi bi-save"></i> Save Changes
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <li class="list-group-item">No vendors available</li>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+    <!-- Bootstrap Tooltip Activation Script -->
+    <script>
+        // Activate tooltips
+        var tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    </script>
+</body>
+</html>
